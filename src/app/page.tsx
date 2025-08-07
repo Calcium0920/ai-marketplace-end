@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { ShoppingCart, User, LogOut, Star, Filter, Search } from 'lucide-react'
+import { ShoppingCart, User, LogOut, Star, Search } from 'lucide-react'
 import { SAMPLE_PRODUCTS } from '@/lib/data'
 import { Product, User as UserType } from '@/lib/types'
 
@@ -53,10 +53,6 @@ export default function HomePage() {
     }
     setCart([...cart, product])
     alert(`${product.title}をカートに追加しました！`)
-  }
-
-  const removeFromCart = (productId: number) => {
-    setCart(cart.filter(item => item.id !== productId))
   }
 
   // 決済処理
@@ -326,12 +322,9 @@ export default function HomePage() {
                           >
                             {isInCart ? '✓ 追加済み' : 'カートに追加'}
                           </button>
-                          <Link
-                            href={`/products/${product.id}`}
-                            className="px-4 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-center"
-                          >
+                          <button className="px-4 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
                             詳細
-                          </Link>
+                          </button>
                         </div>
                       </div>
                     </div>
