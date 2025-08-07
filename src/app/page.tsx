@@ -1,103 +1,364 @@
-import Image from "next/image";
+'use client'
+import { useState } from 'react'
+import Link from 'next/link'
+import { ShoppingCart, User, LogOut, Star, Filter, Search } from 'lucide-react'
+import { SAMPLE_PRODUCTS } from '@/lib/data'
+import { Product, User as UserType } from '@/lib/types'
 
-export default function Home() {
+export default function HomePage() {
+  const [cart, setCart] = useState<Product[]>([])
+  const [user, setUser] = useState<UserType | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const [filteredProducts, setFilteredProducts] = useState(SAMPLE_PRODUCTS)
+
+  // 簡易ログイン
+  const handleLogin = () => {
+    setUser({ 
+      id: '1', 
+      name: 'テストユーザー', 
+      email: 'test@example.com' 
+    })
+  }
+
+  const handleLogout = () => {
+    setUser(null)
+    setCart([]) // ログアウト時にカートもクリア
+  }
+
+  // 商品検索・フィルタリング
+  const handleSearch = (query: string, category: string) => {
+    let filtered = SAMPLE_PRODUCTS
+
+    if (query.trim()) {
+      filtered = filtered.filter(product => 
+        product.title.toLowerCase().includes(query.toLowerCase()) ||
+        product.description.toLowerCase().includes(query.toLowerCase()) ||
+        product.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
+      )
+    }
+
+    if (category) {
+      filtered = filtered.filter(product => product.category === category)
+    }
+
+    setFilteredProducts(filtered)
+  }
+
+  // カート機能
+  const addToCart = (product: Product) => {
+    if (cart.find(item => item.id === product.id)) {
+      alert('既にカートに追加されています')
+      return
+    }
+    setCart([...cart, product])
+    alert(`${product.title}をカートに追加しました！`)
+  }
+
+  const removeFromCart = (productId: number) => {
+    setCart(cart.filter(item => item.id !== productId))
+  }
+
+  // 決済処理
+  const handleCheckout = () => {
+    if (!user) {
+      alert('購入するにはログインが必要です')
+      handleLogin()
+      return
+    }
+
+    if (cart.length === 0) {
+      alert('カートが空です')
+      return
+    }
+
+    const total = cart.reduce((sum, item) => sum + item.price, 0)
+    alert(`🎉 購入完了！（デモ版）\n\n購入商品:\n${cart.map(item => `• ${item.title} - ¥${item.price.toLocaleString()}`).join('\n')}\n\n合計: ¥${total.toLocaleString()}`)
+    setCart([])
+  }
+
+  // カテゴリリスト
+  const categories = [...new Set(SAMPLE_PRODUCTS.map(p => p.category))]
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-gray-50">
+      {/* ヘッダー */}
+      <header className="bg-blue-600 text-white shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-8">
+              <h1 className="text-2xl font-bold">🤖 AI Marketplace</h1>
+              <nav className="hidden md:flex space-x-6">
+                <Link href="/" className="hover:text-blue-200 transition-colors">ホーム</Link>
+                <Link href="/categories" className="hover:text-blue-200 transition-colors">カテゴリ</Link>
+                <Link href="/sell" className="hover:text-blue-200 transition-colors">出品する</Link>
+              </nav>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              {/* カート */}
+              <button
+                onClick={handleCheckout}
+                className="relative hover:text-blue-200 transition-colors"
+              >
+                <ShoppingCart size={24} />
+                {cart.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">
+                    {cart.length}
+                  </span>
+                )}
+              </button>
+              
+              {/* ユーザー */}
+              {user ? (
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center">
+                    <User size={16} />
+                  </div>
+                  <span className="hidden md:block font-medium">{user.name}</span>
+                  <button 
+                    onClick={handleLogout}
+                    className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm flex items-center space-x-1 transition-colors"
+                  >
+                    <LogOut size={16} />
+                    <span>ログアウト</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleLogin}
+                  className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors font-medium"
+                >
+                  ログイン
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* カートサマリー */}
+      {cart.length > 0 && (
+        <div className="bg-green-50 border-b border-green-200 py-3">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <span className="font-medium text-green-800">
+                  🛒 {cart.length}件の商品 - ¥{cart.reduce((sum, item) => sum + item.price, 0).toLocaleString()}
+                </span>
+                <div className="hidden md:flex space-x-2">
+                  {cart.slice(0, 3).map((item) => (
+                    <span key={item.id} className="bg-white text-green-800 px-2 py-1 rounded text-sm">
+                      {item.icon} {item.title}
+                    </span>
+                  ))}
+                  {cart.length > 3 && <span className="text-green-600">他{cart.length - 3}件</span>}
+                </div>
+              </div>
+              <button
+                onClick={handleCheckout}
+                className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition-colors font-medium"
+              >
+                購入手続きへ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* メインコンテンツ */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* ヒーロー */}
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+            🚀 AIツールを発見・購入しよう
+          </h2>
+          <p className="text-xl text-gray-600 mb-8">
+            厳選されたAIツールで、あなたの作業を効率化
+          </p>
+          
+          {/* 検索バー */}
+          <div className="max-w-2xl mx-auto">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="AIツールを検索..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    handleSearch(e.target.value, selectedCategory)
+                  }}
+                />
+              </div>
+              <select
+                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value)
+                  handleSearch(searchQuery, e.target.value)
+                }}
+              >
+                <option value="">全カテゴリ</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* 統計 */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="text-3xl font-bold text-blue-600 mb-2">{filteredProducts.length}</div>
+            <div className="text-gray-600">利用可能ツール</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="text-3xl font-bold text-green-600 mb-2">
+              {(filteredProducts.reduce((sum, p) => sum + p.rating, 0) / filteredProducts.length).toFixed(1)}
+            </div>
+            <div className="text-gray-600">平均評価</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="text-3xl font-bold text-purple-600 mb-2">
+              {filteredProducts.reduce((sum, p) => sum + p.reviewCount, 0)}
+            </div>
+            <div className="text-gray-600">総レビュー数</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <div className="text-3xl font-bold text-orange-600 mb-2">
+              ¥{Math.round(filteredProducts.reduce((sum, p) => sum + p.price, 0) / filteredProducts.length).toLocaleString()}
+            </div>
+            <div className="text-gray-600">平均価格</div>
+          </div>
+        </div>
+
+        {/* 商品グリッド */}
+        <div>
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-2xl font-bold text-gray-800">
+              🛍️ {searchQuery ? `"${searchQuery}"の検索結果` : '人気のAIツール'}
+              <span className="text-lg text-gray-500 ml-2">({filteredProducts.length}件)</span>
+            </h3>
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">検索結果が見つかりません</h3>
+              <p className="text-gray-600">検索条件を変更して再度お試しください</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProducts.map((product) => {
+                const isInCart = cart.find(item => item.id === product.id)
+                return (
+                  <div key={product.id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
+                    {/* 商品画像エリア */}
+                    <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-8 text-center">
+                      <div className="text-5xl mb-2">{product.icon}</div>
+                      <div className="text-sm text-gray-600">{product.category}</div>
+                    </div>
+                    
+                    {/* 商品情報 */}
+                    <div className="p-6">
+                      <h4 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2">
+                        {product.title}
+                      </h4>
+                      
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                        {product.description}
+                      </p>
+                      
+                      {/* 評価 */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < Math.floor(product.rating) 
+                                    ? 'text-yellow-400 fill-current' 
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-gray-600">
+                            {product.rating} ({product.reviewCount})
+                          </span>
+                        </div>
+                        {product.creator && (
+                          <span className="text-xs text-gray-500">{product.creator}</span>
+                        )}
+                      </div>
+                      
+                      {/* タグ */}
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {product.tags.slice(0, 3).map((tag, index) => (
+                          <span key={index} className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      
+                      {/* 価格とボタン */}
+                      <div className="border-t pt-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-2xl font-bold text-blue-600">
+                            ¥{product.price.toLocaleString()}
+                          </span>
+                        </div>
+                        
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => addToCart(product)}
+                            disabled={!!isInCart}
+                            className={`flex-1 py-3 rounded-lg font-medium transition-all ${
+                              isInCart 
+                                ? 'bg-green-500 text-white cursor-not-allowed' 
+                                : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md'
+                            }`}
+                          >
+                            {isInCart ? '✓ 追加済み' : 'カートに追加'}
+                          </button>
+                          <Link
+                            href={`/products/${product.id}`}
+                            className="px-4 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-center"
+                          >
+                            詳細
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* フッター */}
+      <footer className="bg-gray-800 text-white py-12 mt-20">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center">
+            <h5 className="text-2xl font-bold mb-4">🤖 AI Marketplace</h5>
+            <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+              革新的なAIツールを通じて、あなたの創造性と生産性を向上させる
+              新しいプラットフォーム
+            </p>
+            <div className="text-sm text-gray-400 space-y-2">
+              <p>© 2024 AI Marketplace. All rights reserved.</p>
+              <p>🚀 現在はデモ版です - 実際の決済は行われません</p>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
-  );
+  )
 }
