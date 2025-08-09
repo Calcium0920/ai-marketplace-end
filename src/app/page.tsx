@@ -322,9 +322,12 @@ export default function HomePage() {
                           >
                             {isInCart ? '✓ 追加済み' : 'カートに追加'}
                           </button>
-                          <button className="px-4 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                          <Link
+                            href={`/product/${product.id}`}
+                            className="px-4 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-center"
+                          >
                             詳細
-                          </button>
+                          </Link>
                         </div>
                       </div>
                     </div>
