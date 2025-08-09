@@ -9,6 +9,8 @@ interface ReviewFormProps {
   product: Product
   onClose: () => void
   onSubmit: (review: ReviewData) => void
+  isLoggedIn?: boolean
+  demoUser?: { name: string; image?: string }
 }
 
 interface ReviewData {
@@ -19,17 +21,21 @@ interface ReviewData {
   date: string
 }
 
-export default function ReviewForm({ product, onClose, onSubmit }: ReviewFormProps) {
+export default function ReviewForm({ product, onClose, onSubmit, isLoggedIn, demoUser }: ReviewFormProps) {
   const { data: session } = useSession()
   const [rating, setRating] = useState(0)
   const [hoverRating, setHoverRating] = useState(0)
   const [comment, setComment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // 実際のログイン状態を判定（NextAuth OR デモログイン）
+  const isAuthenticated = session || isLoggedIn
+  const currentUser = session?.user || demoUser
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!session) {
+    if (!isAuthenticated) {
       alert('レビューを投稿するにはログインが必要です')
       return
     }
@@ -52,8 +58,8 @@ export default function ReviewForm({ product, onClose, onSubmit }: ReviewFormPro
     const reviewData: ReviewData = {
       rating,
       comment: comment.trim(),
-      userName: session.user?.name || 'Anonymous',
-      userImage: session.user?.image,
+      userName: currentUser?.name || 'Anonymous',
+      userImage: currentUser?.image,
       date: new Date().toLocaleDateString('ja-JP')
     }
 
@@ -155,12 +161,12 @@ export default function ReviewForm({ product, onClose, onSubmit }: ReviewFormPro
           </div>
 
           {/* ユーザー情報 */}
-          {session && (
+          {isAuthenticated && (
             <div className="mb-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center space-x-3">
-                {session.user?.image ? (
+                {currentUser?.image ? (
                   <Image
-                    src={session.user.image}
+                    src={currentUser.image}
                     alt="Profile"
                     width={32}
                     height={32}
@@ -168,11 +174,11 @@ export default function ReviewForm({ product, onClose, onSubmit }: ReviewFormPro
                   />
                 ) : (
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">
-                    {session.user?.name?.charAt(0) || 'U'}
+                    {currentUser?.name?.charAt(0) || 'U'}
                   </div>
                 )}
                 <span className="text-sm text-blue-800">
-                  {session.user?.name} としてレビューを投稿
+                  {currentUser?.name || 'ユーザー'} としてレビューを投稿
                 </span>
               </div>
             </div>

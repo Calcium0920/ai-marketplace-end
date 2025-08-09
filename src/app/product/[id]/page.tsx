@@ -33,6 +33,7 @@ export default function ProductDetailPage() {
   const [showReviewForm, setShowReviewForm] = useState(false)
   const [reviews, setReviews] = useState<Review[]>([])
   const [productStats, setProductStats] = useState({ averageRating: 0, reviewCount: 0 })
+  const [isLoggedIn, setIsLoggedIn] = useState(false) // デモログイン状態
 
   useEffect(() => {
     const productId = parseInt(params.id as string)
@@ -50,6 +51,10 @@ export default function ProductDetailPage() {
         reviewCount: reviewStore.getReviewCount(foundProduct.id)
       })
     }
+
+    // ローカルストレージからデモログイン状態を取得
+    const demoLoginStatus = localStorage.getItem('demoLoggedIn')
+    setIsLoggedIn(demoLoginStatus === 'true')
   }, [params.id])
 
   if (!product) {
@@ -108,7 +113,8 @@ export default function ProductDetailPage() {
   }
 
   const openReviewForm = () => {
-    if (!session) {
+    const isAuthenticated = session || isLoggedIn
+    if (!isAuthenticated) {
       alert('レビューを投稿するにはログインが必要です')
       router.push('/auth/signin')
       return
@@ -474,6 +480,8 @@ export default function ProductDetailPage() {
           product={product}
           onClose={() => setShowReviewForm(false)}
           onSubmit={handleReviewSubmit}
+          isLoggedIn={isLoggedIn}
+          demoUser={isLoggedIn ? { name: 'デモユーザー' } : undefined}
         />
       )}
     </div>

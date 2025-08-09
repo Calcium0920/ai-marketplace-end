@@ -18,14 +18,22 @@ export default function HomePage() {
   // 簡易ログイン機能（一時的）
   const handleSimpleLogin = () => {
     setIsLoggedIn(true)
+    localStorage.setItem('demoLoggedIn', 'true')
     alert('ログインしました（デモ版）')
   }
 
   const handleSimpleLogout = () => {
     setIsLoggedIn(false)
+    localStorage.removeItem('demoLoggedIn')
     setCart([])
     alert('ログアウトしました')
   }
+
+  // ページ読み込み時にデモログイン状態を復元
+  useEffect(() => {
+    const demoLoginStatus = localStorage.getItem('demoLoggedIn')
+    setIsLoggedIn(demoLoginStatus === 'true')
+  }, [])
 
   // 商品検索・フィルタリング
   const handleSearch = (query: string, category: string) => {
