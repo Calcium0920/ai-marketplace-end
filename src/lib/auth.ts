@@ -10,7 +10,7 @@ export const authOptions: NextAuthOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET || 'development-secret-key',
   callbacks: {
-    async redirect({ url, baseUrl }) {
+    async redirect({ baseUrl }) {
       // 常にホームページにリダイレクト
       return baseUrl
     }

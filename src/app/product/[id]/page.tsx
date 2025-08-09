@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { 
@@ -94,7 +95,7 @@ export default function ProductDetailPage() {
     date: string
   }) => {
     // レビューを追加
-    const newReview = reviewStore.addReview(product.id, reviewData)
+    reviewStore.addReview(product.id, reviewData)
     
     // 状態を更新
     setReviews(reviewStore.getReviewsByProductId(product.id))
@@ -292,9 +293,11 @@ export default function ProductDetailPage() {
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center space-x-3">
                                 {review.userImage ? (
-                                  <img
+                                  <Image
                                     src={review.userImage}
                                     alt="User"
+                                    width={32}
+                                    height={32}
                                     className="w-8 h-8 rounded-full"
                                   />
                                 ) : (

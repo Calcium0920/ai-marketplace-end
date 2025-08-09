@@ -1,13 +1,14 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react'
 import { ShoppingCart, User, LogOut, Star, Search } from 'lucide-react'
 import { SAMPLE_PRODUCTS } from '@/lib/data'
 import { Product } from '@/lib/types'
 
 export default function HomePage() {
-  const { data: session, status } = useSession()
+  const { data: session } = useSession()
   const [cart, setCart] = useState<Product[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -147,9 +148,11 @@ export default function HomePage() {
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center">
                     {session?.user?.image ? (
-                      <img 
+                      <Image 
                         src={session.user.image} 
                         alt="Profile" 
+                        width={32}
+                        height={32}
                         className="w-8 h-8 rounded-full"
                       />
                     ) : (

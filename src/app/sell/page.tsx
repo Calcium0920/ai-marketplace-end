@@ -4,14 +4,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { 
   ArrowLeft, 
-  Upload, 
-  Eye, 
-  Save, 
   Plus, 
   X,
   AlertCircle,
-  CheckCircle,
-  Image as ImageIcon
+  Save
 } from 'lucide-react'
 
 interface ProductForm {

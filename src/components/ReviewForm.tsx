@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import { useSession } from 'next-auth/react'
 import { Star, Send, X } from 'lucide-react'
 import { Product } from '@/lib/types'
@@ -158,9 +159,11 @@ export default function ReviewForm({ product, onClose, onSubmit }: ReviewFormPro
             <div className="mb-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center space-x-3">
                 {session.user?.image ? (
-                  <img
+                  <Image
                     src={session.user.image}
                     alt="Profile"
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full"
                   />
                 ) : (
