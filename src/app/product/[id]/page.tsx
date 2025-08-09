@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { 
   ArrowLeft, 
   Star, 
@@ -12,23 +13,42 @@ import {
   Shield,
   Clock,
   Download,
-  MessageCircle 
+  MessageCircle,
+  Edit3 
 } from 'lucide-react'
 import { SAMPLE_PRODUCTS } from '@/lib/data'
 import { Product } from '@/lib/types'
+import { reviewStore, Review } from '@/lib/reviews'
+import ReviewForm from '@/components/ReviewForm'
 
 export default function ProductDetailPage() {
+  const { data: session } = useSession()
   const params = useParams()
   const router = useRouter()
   const [product, setProduct] = useState<Product | null>(null)
   const [isInCart, setIsInCart] = useState(false)
   const [selectedTab, setSelectedTab] = useState<'description' | 'reviews' | 'creator'>('description')
   const [isLiked, setIsLiked] = useState(false)
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [productStats, setProductStats] = useState({ averageRating: 0, reviewCount: 0 })
 
   useEffect(() => {
     const productId = parseInt(params.id as string)
     const foundProduct = SAMPLE_PRODUCTS.find(p => p.id === productId)
     setProduct(foundProduct || null)
+
+    if (foundProduct) {
+      // レビューデータを取得
+      const productReviews = reviewStore.getReviewsByProductId(foundProduct.id)
+      setReviews(productReviews)
+      
+      // 統計を更新
+      setProductStats({
+        averageRating: reviewStore.getAverageRating(foundProduct.id),
+        reviewCount: reviewStore.getReviewCount(foundProduct.id)
+      })
+    }
   }, [params.id])
 
   if (!product) {
@@ -66,30 +86,34 @@ export default function ProductDetailPage() {
     alert('URLをコピーしました！')
   }
 
-  // サンプルレビューデータ
-  const sampleReviews = [
-    {
-      id: 1,
-      user: '田中太郎',
-      rating: 5,
-      comment: '非常に使いやすく、業務効率が格段に向上しました！',
-      date: '2024-08-05'
-    },
-    {
-      id: 2,
-      user: '山田花子',
-      rating: 4,
-      comment: '機能は豊富ですが、少し設定が複雑でした。でも慣れれば問題なし。',
-      date: '2024-08-03'
-    },
-    {
-      id: 3,
-      user: '佐藤次郎',
-      rating: 5,
-      comment: 'コスパ最高！この価格でこの機能は驚きです。',
-      date: '2024-08-01'
+  const handleReviewSubmit = (reviewData: {
+    rating: number
+    comment: string
+    userName: string
+    userImage?: string | null
+    date: string
+  }) => {
+    // レビューを追加
+    const newReview = reviewStore.addReview(product.id, reviewData)
+    
+    // 状態を更新
+    setReviews(reviewStore.getReviewsByProductId(product.id))
+    setProductStats({
+      averageRating: reviewStore.getAverageRating(product.id),
+      reviewCount: reviewStore.getReviewCount(product.id)
+    })
+    
+    setShowReviewForm(false)
+  }
+
+  const openReviewForm = () => {
+    if (!session) {
+      alert('レビューを投稿するにはログインが必要です')
+      router.push('/auth/signin')
+      return
     }
-  ]
+    setShowReviewForm(true)
+  }
 
   // 関連商品
   const relatedProducts = SAMPLE_PRODUCTS
@@ -147,7 +171,7 @@ export default function ProductDetailPage() {
                 <nav className="flex">
                   {[
                     { key: 'description', label: '詳細情報' },
-                    { key: 'reviews', label: `レビュー (${sampleReviews.length})` },
+                    { key: 'reviews', label: `レビュー (${productStats.reviewCount})` },
                     { key: 'creator', label: '作成者情報' }
                   ].map((tab) => (
                     <button
@@ -222,54 +246,85 @@ export default function ProductDetailPage() {
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-bold text-gray-800">ユーザーレビュー</h3>
-                      <div className="flex items-center space-x-2">
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-5 h-5 ${
-                                i < Math.floor(product.rating)
-                                  ? 'text-yellow-400 fill-current'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
+                      <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-5 h-5 ${
+                                  i < Math.floor(productStats.averageRating)
+                                    ? 'text-yellow-400 fill-current'
+                                    : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="font-medium">{productStats.averageRating}</span>
+                          <span className="text-gray-500">({productStats.reviewCount}件)</span>
                         </div>
-                        <span className="font-medium">{product.rating}</span>
-                        <span className="text-gray-500">({product.reviewCount}件)</span>
+                        <button
+                          onClick={openReviewForm}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                        >
+                          <Edit3 size={16} />
+                          <span>レビューを書く</span>
+                        </button>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      {sampleReviews.map((review) => (
-                        <div key={review.id} className="border-b pb-4 last:border-b-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <User size={16} className="text-blue-600" />
-                              </div>
-                              <span className="font-medium">{review.user}</span>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <div className="flex">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star
-                                    key={i}
-                                    className={`w-4 h-4 ${
-                                      i < review.rating
-                                        ? 'text-yellow-400 fill-current'
-                                        : 'text-gray-300'
-                                    }`}
+                    {reviews.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="text-4xl mb-4">⭐</div>
+                        <h4 className="text-lg font-medium text-gray-800 mb-2">まだレビューがありません</h4>
+                        <p className="text-gray-600 mb-4">最初のレビューを投稿してみませんか？</p>
+                        <button
+                          onClick={openReviewForm}
+                          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          レビューを書く
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {reviews.map((review) => (
+                          <div key={review.id} className="border-b pb-4 last:border-b-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-3">
+                                {review.userImage ? (
+                                  <img
+                                    src={review.userImage}
+                                    alt="User"
+                                    className="w-8 h-8 rounded-full"
                                   />
-                                ))}
+                                ) : (
+                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <User size={16} className="text-blue-600" />
+                                  </div>
+                                )}
+                                <span className="font-medium">{review.userName}</span>
                               </div>
-                              <span className="text-sm text-gray-500">{review.date}</span>
+                              <div className="flex items-center space-x-2">
+                                <div className="flex">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-4 h-4 ${
+                                        i < review.rating
+                                          ? 'text-yellow-400 fill-current'
+                                          : 'text-gray-300'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <span className="text-sm text-gray-500">{review.date}</span>
+                              </div>
                             </div>
+                            <p className="text-gray-600">{review.comment}</p>
                           </div>
-                          <p className="text-gray-600">{review.comment}</p>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -312,7 +367,7 @@ export default function ProductDetailPage() {
                       <Star
                         key={i}
                         className={`w-4 h-4 ${
-                          i < Math.floor(product.rating)
+                          i < Math.floor(productStats.averageRating || product.rating)
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
                         }`}
@@ -320,7 +375,7 @@ export default function ProductDetailPage() {
                     ))}
                   </div>
                   <span className="text-sm text-gray-600">
-                    {product.rating} ({product.reviewCount}件のレビュー)
+                    {productStats.averageRating || product.rating} ({productStats.reviewCount || product.reviewCount}件のレビュー)
                   </span>
                 </div>
 
@@ -409,6 +464,15 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </main>
+
+      {/* レビューフォーム */}
+      {showReviewForm && (
+        <ReviewForm
+          product={product}
+          onClose={() => setShowReviewForm(false)}
+          onSubmit={handleReviewSubmit}
+        />
+      )}
     </div>
   )
 }
