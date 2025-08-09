@@ -12,6 +12,19 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [filteredProducts, setFilteredProducts] = useState(SAMPLE_PRODUCTS)
+  const [isLoggedIn, setIsLoggedIn] = useState(false) // 一時的なログイン状態
+
+  // 簡易ログイン機能（一時的）
+  const handleSimpleLogin = () => {
+    setIsLoggedIn(true)
+    alert('ログインしました（デモ版）')
+  }
+
+  const handleSimpleLogout = () => {
+    setIsLoggedIn(false)
+    setCart([])
+    alert('ログアウトしました')
+  }
 
   // 商品検索・フィルタリング
   const handleSearch = (query: string, category: string) => {
@@ -44,9 +57,8 @@ export default function HomePage() {
 
   // 決済処理
   const handleCheckout = () => {
-    if (!session) {
+    if (!session && !isLoggedIn) {
       alert('購入するにはログインが必要です')
-      window.location.href = '/auth/signin'
       return
     }
 
@@ -93,10 +105,10 @@ export default function HomePage() {
               </button>
               
               {/* ユーザー */}
-              {session ? (
+              {session || isLoggedIn ? (
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center">
-                    {session.user?.image ? (
+                    {session?.user?.image ? (
                       <img 
                         src={session.user.image} 
                         alt="Profile" 
@@ -106,9 +118,11 @@ export default function HomePage() {
                       <User size={16} />
                     )}
                   </div>
-                  <span className="hidden md:block font-medium">{session.user?.name}</span>
+                  <span className="hidden md:block font-medium">
+                    {session?.user?.name || 'デモユーザー'}
+                  </span>
                   <button 
-                    onClick={() => signOut()}
+                    onClick={session ? () => signOut() : handleSimpleLogout}
                     className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm flex items-center space-x-1 transition-colors"
                   >
                     <LogOut size={16} />
@@ -116,12 +130,20 @@ export default function HomePage() {
                   </button>
                 </div>
               ) : (
-                <Link
-                  href="/auth/signin"
-                  className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors font-medium"
-                >
-                  ログイン
-                </Link>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleSimpleLogin}
+                    className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors font-medium"
+                  >
+                    ログイン（デモ）
+                  </button>
+                  <Link
+                    href="/auth/signin"
+                    className="bg-blue-800 text-white px-4 py-2 rounded hover:bg-blue-900 transition-colors font-medium"
+                  >
+                    Google
+                  </Link>
+                </div>
               )}
             </div>
           </div>
