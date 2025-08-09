@@ -56,7 +56,7 @@ export default function HomePage() {
   }
 
   // 決済処理
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!session && !isLoggedIn) {
       alert('購入するにはログインが必要です')
       return
@@ -67,9 +67,47 @@ export default function HomePage() {
       return
     }
 
-    const total = cart.reduce((sum, item) => sum + item.price, 0)
-    alert(`🎉 購入完了！（デモ版）\n\n購入商品:\n${cart.map(item => `• ${item.title} - ¥${item.price.toLocaleString()}`).join('\n')}\n\n合計: ¥${total.toLocaleString()}`)
-    setCart([])
+    // Stripe環境変数が設定されているかチェック
+    if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+      // 環境変数が未設定の場合はデモ決済
+      const total = cart.reduce((sum, item) => sum + item.price, 0)
+      alert(`🎉 購入完了！（デモ版）\n\n購入商品:\n${cart.map(item => `• ${item.title} - ¥${item.price.toLocaleString()}`).join('\n')}\n\n合計: ¥${total.toLocaleString()}`)
+      setCart([])
+      return
+    }
+
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: cart.map(item => ({ id: item.id, quantity: 1 })),
+          successUrl: `${window.location.origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${window.location.origin}/`,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('決済セッションの作成に失敗しました')
+      }
+
+      const { url } = await response.json()
+      
+      if (url) {
+        // Stripeの決済ページにリダイレクト
+        window.location.href = url
+      } else {
+        throw new Error('決済URLの取得に失敗しました')
+      }
+    } catch (error) {
+      console.error('Checkout error:', error)
+      // エラー時はデモ決済として処理
+      const total = cart.reduce((sum, item) => sum + item.price, 0)
+      alert(`決済システムエラー - デモ決済で処理します\n\n購入商品:\n${cart.map(item => `• ${item.title} - ¥${item.price.toLocaleString()}`).join('\n')}\n\n合計: ¥${total.toLocaleString()}`)
+      setCart([])
+    }
   }
 
   // カテゴリリスト
