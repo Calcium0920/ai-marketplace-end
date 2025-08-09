@@ -27,19 +27,18 @@ function SignInContent() {
       setError('')
       
       const result = await signIn('google', {
-        callbackUrl,
-        redirect: false
+        callbackUrl: '/',
+        redirect: true
       })
 
+      // redirect: trueの場合、成功時は自動でリダイレクトされる
       if (result?.error) {
         setError('ログインに失敗しました。もう一度お試しください。')
-      } else if (result?.url) {
-        router.push(result.url)
+        setIsLoading(false)
       }
     } catch (error) {
       setError('ログインエラーが発生しました。')
       console.error('Sign in error:', error)
-    } finally {
       setIsLoading(false)
     }
   }
