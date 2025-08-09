@@ -152,7 +152,7 @@ export default function ProductDetailPage() {
                   ].map((tab) => (
                     <button
                       key={tab.key}
-                      onClick={() => setSelectedTab(tab.key as any)}
+                      onClick={() => setSelectedTab(tab.key as 'description' | 'reviews' | 'creator')}
                       className={`px-6 py-4 font-medium transition-colors ${
                         selectedTab === tab.key
                           ? 'border-b-2 border-blue-500 text-blue-600'
