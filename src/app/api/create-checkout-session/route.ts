@@ -55,13 +55,15 @@ export async function POST(request: NextRequest) {
       url: session.url 
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Stripe checkout session creation failed:', error)
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     
     return NextResponse.json(
       { 
         error: 'チェックアウトセッションの作成に失敗しました',
-        details: error.message 
+        details: errorMessage 
       },
       { status: 500 }
     )
