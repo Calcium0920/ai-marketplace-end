@@ -1,30 +1,17 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useSession, signOut } from 'next-auth/react'
 import { ShoppingCart, User, LogOut, Star, Search } from 'lucide-react'
 import { SAMPLE_PRODUCTS } from '@/lib/data'
-import { Product, User as UserType } from '@/lib/types'
+import { Product } from '@/lib/types'
 
 export default function HomePage() {
+  const { data: session, status } = useSession()
   const [cart, setCart] = useState<Product[]>([])
-  const [user, setUser] = useState<UserType | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [filteredProducts, setFilteredProducts] = useState(SAMPLE_PRODUCTS)
-
-  // 簡易ログイン
-  const handleLogin = () => {
-    setUser({ 
-      id: '1', 
-      name: 'テストユーザー', 
-      email: 'test@example.com' 
-    })
-  }
-
-  const handleLogout = () => {
-    setUser(null)
-    setCart([]) // ログアウト時にカートもクリア
-  }
 
   // 商品検索・フィルタリング
   const handleSearch = (query: string, category: string) => {
@@ -57,9 +44,9 @@ export default function HomePage() {
 
   // 決済処理
   const handleCheckout = () => {
-    if (!user) {
+    if (!session) {
       alert('購入するにはログインが必要です')
-      handleLogin()
+      window.location.href = '/auth/signin'
       return
     }
 
@@ -106,14 +93,22 @@ export default function HomePage() {
               </button>
               
               {/* ユーザー */}
-              {user ? (
+              {session ? (
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center">
-                    <User size={16} />
+                    {session.user?.image ? (
+                      <img 
+                        src={session.user.image} 
+                        alt="Profile" 
+                        className="w-8 h-8 rounded-full"
+                      />
+                    ) : (
+                      <User size={16} />
+                    )}
                   </div>
-                  <span className="hidden md:block font-medium">{user.name}</span>
+                  <span className="hidden md:block font-medium">{session.user?.name}</span>
                   <button 
-                    onClick={handleLogout}
+                    onClick={() => signOut()}
                     className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm flex items-center space-x-1 transition-colors"
                   >
                     <LogOut size={16} />
@@ -121,12 +116,12 @@ export default function HomePage() {
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={handleLogin}
+                <Link
+                  href="/auth/signin"
                   className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-gray-100 transition-colors font-medium"
                 >
                   ログイン
-                </button>
+                </Link>
               )}
             </div>
           </div>
