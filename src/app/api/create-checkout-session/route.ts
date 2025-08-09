@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { stripe } from '@/lib/stripe'
 import { SAMPLE_PRODUCTS } from '@/lib/data'
+import { PurchaseService } from '@/lib/database'
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions)
     const { items, successUrl, cancelUrl } = await request.json()
+
+    // ログインチェック
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'ログインが必要です' },
+        { status: 401 }
+      )
+    }
 
     // 商品情報を検証
     const lineItems = items.map((item: { id: number; quantity: number }) => {
@@ -19,7 +31,6 @@ export async function POST(request: NextRequest) {
           product_data: {
             name: product.title,
             description: product.description,
-            images: [], // 実際のプロダクトでは商品画像URLを設定
             metadata: {
               productId: product.id.toString(),
               category: product.category,
@@ -32,27 +43,36 @@ export async function POST(request: NextRequest) {
     })
 
     // Checkout セッションを作成
-    const session = await stripe.checkout.sessions.create({
+    const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
       success_url: successUrl,
       cancel_url: cancelUrl,
+      customer_email: session.user.email || undefined,
       metadata: {
+        userId: session.user.id,
         orderItems: JSON.stringify(items),
         timestamp: new Date().toISOString(),
       },
-      customer_email: undefined, // ログインユーザーの場合はメールアドレスを設定
       billing_address_collection: 'auto',
-      shipping_address_collection: {
-        allowed_countries: ['JP'], // 日本のみ配送対応
-      },
-      allow_promotion_codes: true, // プロモーションコード対応
+      allow_promotion_codes: true,
     })
 
+    // 購入記録を事前作成（pending状態）
+    for (const item of items) {
+      await PurchaseService.createPurchase({
+        user_id: session.user.id,
+        product_id: item.id,
+        stripe_session_id: checkoutSession.id,
+        amount: SAMPLE_PRODUCTS.find(p => p.id === item.id)?.price || 0,
+        status: 'pending'
+      })
+    }
+
     return NextResponse.json({ 
-      sessionId: session.id,
-      url: session.url 
+      sessionId: checkoutSession.id,
+      url: checkoutSession.url 
     })
 
   } catch (error: unknown) {

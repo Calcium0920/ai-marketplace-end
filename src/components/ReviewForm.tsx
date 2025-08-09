@@ -52,22 +52,57 @@ export default function ReviewForm({ product, onClose, onSubmit, isLoggedIn, dem
 
     setIsSubmitting(true)
 
-    // 仮の投稿処理
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      // 本格版: Supabaseに保存
+      if (session?.user?.id) {
+        const { ReviewService } = await import('@/lib/database')
+        
+        const reviewData = {
+          product_id: product.id,
+          user_id: session.user.id,
+          user_name: session.user.name || 'Anonymous',
+          user_image: session.user.image || undefined,
+          rating,
+          comment: comment.trim()
+        }
 
-    const reviewData: ReviewData = {
-      rating,
-      comment: comment.trim(),
-      userName: currentUser?.name || 'Anonymous',
-      userImage: currentUser?.image,
-      date: new Date().toLocaleDateString('ja-JP')
+        const newReview = await ReviewService.addReview(reviewData)
+        
+        if (newReview) {
+          alert('レビューを投稿しました！')
+          onSubmit({
+            rating,
+            comment: comment.trim(),
+            userName: session.user.name || 'Anonymous',
+            userImage: session.user.image,
+            date: new Date().toLocaleDateString('ja-JP')
+          })
+        } else {
+          throw new Error('レビューの保存に失敗しました')
+        }
+      } else {
+        // フォールバック: デモ版
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        const reviewData: ReviewData = {
+          rating,
+          comment: comment.trim(),
+          userName: currentUser?.name || 'Anonymous',
+          userImage: currentUser?.image,
+          date: new Date().toLocaleDateString('ja-JP')
+        }
+
+        onSubmit(reviewData)
+        alert('レビューを投稿しました！（デモ版）')
+      }
+      
+      onClose()
+    } catch (error) {
+      console.error('Review submission error:', error)
+      alert('レビューの投稿に失敗しました。もう一度お試しください。')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    onSubmit(reviewData)
-    
-    alert('レビューを投稿しました！')
-    onClose()
-    setIsSubmitting(false)
   }
 
   return (
